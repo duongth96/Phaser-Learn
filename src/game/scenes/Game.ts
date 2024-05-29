@@ -24,6 +24,7 @@ export class Game extends Scene
         this.load.image('logo', 'logo.png');
         this.load.image('fish1', 'fishauto/fish1.png');
         this.load.spritesheet('tank1', 'Tank_01_Sheets.png', { frameWidth: 256, frameHeight: 256 });
+        this.load.spritesheet('tank1_tr2', 'Tank_01_TR2_Sheets.png', { frameWidth: 256, frameHeight: 256 });
 
         
     }
@@ -32,14 +33,14 @@ export class Game extends Scene
     {
         this.anims.create({
             key: 'run',
-            frames: this.anims.generateFrameNumbers('tank1', { start: 0, end: 1, first: 1 }),
+            frames: this.anims.generateFrameNumbers('tank1_tr2', { start: 0, end: 1, first: 1 }),
             frameRate: 15,
             repeat: -1
         });
         
         this.add.image(512, 384, 'background');
 
-        this.player = this.matter.add.sprite(512, 350, 'tank1')
+        this.player = this.matter.add.sprite(512, 350, 'tank1_tr2')
             .setScale(.3)
             .setFlip(false, true)
             //.setOrigin(.5, 1);
