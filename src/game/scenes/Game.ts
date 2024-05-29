@@ -1,4 +1,4 @@
-import { Scene, Math as pMath } from 'phaser';
+import { Scene, Math as pMath, Cameras } from 'phaser';
 import { EventBus } from '../EventBus';
 
 export class Game extends Scene
@@ -8,6 +8,7 @@ export class Game extends Scene
     pY:number;
     isMove:boolean;
     fishes:Array<any> = [];
+    zCamera:Cameras.Scene2D.Camera;
 
     constructor ()
     {
@@ -21,6 +22,7 @@ export class Game extends Scene
         
         this.load.image('star', 'star.png');
         this.load.image('background', 'bg.png');
+        this.load.image('background2', 'sand.jpg');
         this.load.image('logo', 'logo.png');
         this.load.image('fish1', 'fishauto/fish1.png');
         this.load.spritesheet('tank1', 'Tank_01_Sheets.png', { frameWidth: 256, frameHeight: 256 });
@@ -31,27 +33,41 @@ export class Game extends Scene
 
     create ()
     {
-        this.anims.create({
-            key: 'run',
-            frames: this.anims.generateFrameNumbers('tank1_tr2', { start: 0, end: 1, first: 1 }),
-            frameRate: 15,
-            repeat: -1
-        });
+        this.initAnims();
         
-        this.add.image(512, 384, 'background');
+        this.add.image(0, 0, 'background2')
+            .setOrigin(0, 0)
+            .setScale(.2)
+            // .setCrop(0, 0, (this.game.config.width as number)/2, (this.game.config.height as number)/2);
 
-        this.player = this.matter.add.sprite(512, 350, 'tank1_tr2')
-            .setScale(.3)
-            .setFlip(false, true)
-            //.setOrigin(.5, 1);
-
-        this.player.direction = 0;
-        this.player.speed = 2;
-        this.player.angle = 30;
+        this.addPlayer();
         
         this.addFishes(2);
-        
+        this.onKeyboardControl()
+       
+        // this.zCamera = this.cameras.add(0, 0, (this.game.config.width as number), (this.game.config.height as number))
+        //     .setZoom(1)
+        //     .startFollow(this.player);
 
+        EventBus.emit('current-scene-ready', this);
+    }
+
+    update(time: number, delta: number): void {
+        this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
+
+        // this.player.x += Math.sin(this.player.direction) * this.player.speed;
+        // this.player.y += Math.cos(this.player.direction) * this.player.speed;
+
+        if(this.rotaDone(this.player.rotation, - this.player.direction) && this.isMove){
+            this.player.x += Math.sin(this.player.direction) * this.player.speed;
+            this.player.y += Math.cos(this.player.direction) * this.player.speed;
+        }
+
+        //this.zCamera.setScroll(this.player.x, this.player.y);
+        //this.zCamera.setViewport(this.player.x, this.player.y, 300);
+    }
+
+    onKeyboardControl(){
         this.input.on('pointerdown',()=>{
             let pt = this.game.input.mousePointer;
             this.pX = pt?.worldX??0;
@@ -92,28 +108,19 @@ export class Game extends Scene
         });
 
         this.input.keyboard?.on('keyup',()=>{
-            setTimeout(()=>{
-                this.isMove = false;
-                this.player.stop();
-            }, 400);
+            this.isMove = false;
+            this.player.stop();
         });
-        
-        
-        EventBus.emit('current-scene-ready', this);
     }
 
-    update(time: number, delta: number): void {
-        this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
-
-        // this.player.x += Math.sin(this.player.direction) * this.player.speed;
-        // this.player.y += Math.cos(this.player.direction) * this.player.speed;
-
-        if(this.rotaDone(this.player.rotation, - this.player.direction) && this.isMove){
-            this.player.x += Math.sin(this.player.direction) * this.player.speed;
-            this.player.y += Math.cos(this.player.direction) * this.player.speed;
-        }
+    initAnims(){
+        this.anims.create({
+            key: 'run',
+            frames: this.anims.generateFrameNumbers('tank1_tr2', { start: 0, end: 1, first: 1 }),
+            frameRate: 15,
+            repeat: -1
+        });
     }
-
 
     addFishes(num:integer){
         for(let i=0; i < num; i++){
@@ -123,10 +130,24 @@ export class Game extends Scene
             const fish = this.matter.add.sprite(x, y, "fish1")
                 .setScale(.5)
                 .setStatic(true);
+            fish.preFX?.addShadow();
 
             this.fishes.push(fish);
 
         }
+    }
+
+    addPlayer(){
+        this.player = this.matter.add.sprite(512, 350, 'tank1_tr2')
+            .setScale(.5)
+            .setFlip(false, true)
+            //.setOrigin(.5, 1);
+
+        this.player.preFX.addShadow();
+
+        this.player.direction = 0;
+        this.player.speed = .5;
+        this.player.angle = 30;
     }
 
     moveToDone(cPoint:any, toPoint:any){

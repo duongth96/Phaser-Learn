@@ -6,7 +6,7 @@ import { AUTO, Game, Types } from 'phaser';
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config: Types.Core.GameConfig = {
     type: AUTO,
-    width: 1024,
+    width: 1020,
     height: 768,
     physics: { 
         default: 'matter',
