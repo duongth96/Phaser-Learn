@@ -1,7 +1,6 @@
 import { Scene, Math as pMath, Cameras, GameObjects, Physics } from 'phaser';
 import { EventBus } from '../EventBus';
-import { config } from 'process';
-import { log } from 'console';
+import internal from 'stream';
 
 export class Game extends Scene
 {
@@ -11,15 +10,22 @@ export class Game extends Scene
     gamePartW:number;
     gamePartH:number;
 
+    players:Array<any> =[];
     player:any;
     pX:number;
     pY:number;
     isMove:boolean;
-    fishes:Array<any> = [];
+    staticObjects:Array<any> = [];
     shells:Array<any> = [];
+    autosetInterval:any
 
+    staticNames = ["cont1","cont2","cont3","cont4"];
+
+    // game layers
     decorContainer:GameObjects.Container;
+    staticContainer:GameObjects.Container;
     playerContainer:GameObjects.Container;
+    aminsContainer:GameObjects.Container;
 
     constructor ()
     {
@@ -39,9 +45,15 @@ export class Game extends Scene
 
         this.load.image('shell1', 'Medium_Shell.png');
 
+        // static object
+        this.load.image('cont1', 'Container_A.png');
+        this.load.image('cont2', 'Container_B.png');
+        this.load.image('cont3', 'Container_C.png');
+        this.load.image('cont4', 'Container_D.png');
+
         this.load.spritesheet('tank1', 'Tank_01_Sheets.png', { frameWidth: 256, frameHeight: 256 });
         this.load.spritesheet('tank1_tr2', 'Tank_01_TR2_Sheets.png', { frameWidth: 256, frameHeight: 256 });
-        //this.load.spritesheet('bomb1', 'bomb_01.png', { frameWidth: 256, frameHeight: 256 });
+        this.load.spritesheet('boom1', 'bomb_01.png', { frameWidth: 256, frameHeight: 256 });
         this.load.spritesheet('explosion1', 'explosion_01.png', { frameWidth: 256, frameHeight: 256 });
     }
 
@@ -55,20 +67,46 @@ export class Game extends Scene
             .setOrigin(0, 0);
 
         this.decorContainer = this.add.container();
+        this.staticContainer = this.add.container();
         this.playerContainer = this.add.container();
+        this.aminsContainer = this.add.container();
 
         this.onKeyboardControl();
         this.zCamera = this.cameras.main
             .setSize((this.game.config.width as number), (this.game.config.height as number))
             .setZoom(this.zCamZoom);
-
-        // (window as any).zCam = this.zCamera;
-        // (window as any).pler = this.player;
+        
 
         this.addPlayer();
-        this.addFishes(2);
+        this.addMPlayers(5);
+        this.addStaticSolid(5);
+
+        // world inpact
+        this.matter.world.on('collisionstart', (event:any)=>{
+            //console.log(event);
+            //let { bodies} = event.source.detector;
+            if(event.pairs[0].bodyA.gameObject.name === "shell"){
+                this.children.remove(event.pairs[0].bodyA.gameObject);
+                this.matter.world.remove(event.pairs[0].bodyA);
+            }
+            if(event.pairs[0].bodyB.gameObject.name === "shell"){
+                this.children.remove(event.pairs[0].bodyB.gameObject);
+                this.matter.world.remove(event.pairs[0].bodyB);
+            }
+        });
+
+        this.matter.world.on('collisionend', (event:any)=>{
+            if(event.pairs[0].bodyA.gameObject.name === "shell"){
+                this.addBoom(event.pairs[0].bodyB.position.x, event.pairs[0].bodyB.position.y);
+            }   
+            if(event.pairs[0].bodyB.gameObject.name === "shell"){
+                this.addBoom(event.pairs[0].bodyB.position.x, event.pairs[0].bodyB.position.y);
+            }
+        });
 
         
+        (window as any).zCam = this.zCamera;
+        (window as any).pler = this.player;
 
         EventBus.emit('current-scene-ready', this);
     }
@@ -89,8 +127,8 @@ export class Game extends Scene
             this.player.y += Math.cos(this.player.direction) * this.player.speed;
             this.updateMainCameraFollow(this.player);
         }
-
         
+        this.otherAutoPlay(time);
         this.updateShells(time);
     }
 
@@ -111,6 +149,8 @@ export class Game extends Scene
             this.pY = pt?.worldY??0;
             
             this.player.direction = Math.atan2(this.pX-this.player.x, this.pY - this.player.y);
+            
+            
         });
 
         this.input.keyboard?.on('keydown-W',()=>{
@@ -119,6 +159,7 @@ export class Game extends Scene
                 this.player.play('anim_run1');
                 this.isMove = true;
             }
+            
         });
         this.input.keyboard?.on('keydown-S',()=>{
             this.player.direction = Math.atan2(0, (this.game.config.height as number) - (this.player.y as number));
@@ -126,6 +167,7 @@ export class Game extends Scene
                 this.player.play('anim_run1');
                 this.isMove = true;
             }
+            
         });
         this.input.keyboard?.on('keydown-A',()=>{
             this.player.direction = Math.atan2(0 - this.player.x, 0);
@@ -133,6 +175,7 @@ export class Game extends Scene
                 this.player.play('anim_run1');
                 this.isMove = true;
             }
+            
         });
         this.input.keyboard?.on('keydown-D',()=>{
             this.player.direction = Math.atan2((this.game.config.width as number) - (this.player.x as number), 0);
@@ -140,6 +183,7 @@ export class Game extends Scene
                 this.player.play('anim_run1');
                 this.isMove = true;
             }
+            
         });
 
         this.input.keyboard?.on('keydown-SPACE',()=>{
@@ -148,8 +192,6 @@ export class Game extends Scene
         });
 
         this.input.keyboard?.on('keyup',(event:any)=>{
-            console.log(event);
-            
 
             if(
                 event.code=='KeyW' ||
@@ -176,31 +218,35 @@ export class Game extends Scene
 
         this.anims.create({
             key: 'anim_explosion1',
-            frames: this.anims.generateFrameNumbers('explosion1', { start: 0, end: 9}),
+            frames: this.anims.generateFrameNumbers('explosion1', { start: 0, end: 8}),
+            frameRate: 15,
+            repeat: 0
+        });
+        this.anims.create({
+            key: 'anim_boom1',
+            frames: this.anims.generateFrameNumbers('boom1', { start: 0, end: 5}),
             frameRate: 15,
             repeat: 0
         });
     }
 
-    addFishes(num:integer){
+    addStaticSolid(num:integer){
         for(let i=0; i < num; i++){
+
+            var sptName = this.staticNames[Math.ceil(Math.random()*this.staticNames.length)]
 
             const x = Math.random()*(this.game.config.width as number);
             const y = Math.random()*(this.game.config.height as number);
 
-            const fish = new Physics.Matter.Sprite(this.matter.world, x, y, "fish1")
-                .setScale(.2)
+            const cont = new Physics.Matter.Sprite(this.matter.world, x, y, sptName)
+                .setScale(.3)
                 .setStatic(true);
-            fish.preFX?.addShadow();
 
-            this.fishes.push(fish);
-            this.playerContainer.add(fish);
-        }
-    }
-    updateFishes(time:number){
-        for (let index = 0; index < this.fishes.length; index++) {
-            const fish = this.fishes[index];
+            cont.preFX?.addShadow();
 
+            this.staticObjects.push(cont);
+            this.staticContainer.add(cont);
+            
         }
     }
 
@@ -208,23 +254,83 @@ export class Game extends Scene
 
         this.player = new Physics.Matter.Sprite(this.matter.world, (this.game.config.width as number)/2,(this.game.config.height as number)/2, 'tank1_tr2');
         
-        this.player.setScale(.2);
+        this.player.setScale(.15);
         this.player.setFlip(false, true);
 
         this.player.preFX.addShadow();
 
         this.player.direction = 0;
-        this.player.speed = 2;
-        this.player.angle = 30;
+        this.player.speed = 1;
+        this.player.name = "myTank"
 
         this.playerContainer.add(this.player);
+    }
+
+    addMPlayers(num:integer){
+        for (let index = 0; index < num; index++) {
+            const x = Math.random()*(this.game.config.width as number);
+            const y = Math.random()*(this.game.config.height as number);
+            const mPlayer : any = new Physics.Matter.Sprite(this.matter.world, x, y, 'tank1');
+
+            mPlayer.setScale(.15);
+            mPlayer.setFlip(false, true);
+
+            mPlayer.preFX.addShadow();
+
+            mPlayer.direction = 0;
+            mPlayer.speed = 1;
+            mPlayer.name = "otherTank";
+
+            this.playerContainer.add(mPlayer);
+            this.players.push(mPlayer);
+        }
+
+        this.autosetInterval = setInterval(()=>{
+            for (let index = 0; index < this.players.length; index++) {
+                const mPlayer = this.players[index];
+                mPlayer.direction = Math.PI* Math.random();
+            }
+        },2000);
+    }
+    otherAutoPlay(time:number){
+        for (let index = 0; index < this.players.length; index++) {
+            const mPlayer = this.players[index];
+
+            mPlayer.rotation = pMath.Angle.RotateTo(mPlayer.rotation, - mPlayer.direction, 0.05);
+        }
     }
 
     addShell(player:any){
         if(!this.rotaDone(player)) return;
 
-        const shell:any = this.add.sprite((player.x as number), (player.y as number), 'shell1')
+        var x = 0;
+        var y = 0;
+        var margin = 40;
+        
+        if(player.direction == 0)//s
+        {
+            x = player.x;
+            y = player.y+margin;
+        }
+        if(Math.round(player.direction) == -2)//a
+        {
+            x = player.x-margin;
+            y = player.y;
+        }
+        if(Math.round(player.direction) == 3)//w
+        {
+            x = player.x;
+            y = player.y-margin;
+        }
+        if(Math.round(player.direction) == 2)//d
+        {
+            x = player.x+margin;
+            y = player.y;
+        }
+
+        const shell:any = this.matter.add.sprite(x, y, 'shell1')
             .setScale(.5)
+            .setCircle(10)
             .setFlip(false, true);
 
         shell.direction = player.direction;
@@ -232,6 +338,7 @@ export class Game extends Scene
         shell.rotation = - shell.direction;
         shell.startX = shell.x;
         shell.startY = shell.y;
+        shell.name="shell";
 
         this.shells.push(shell);
     }
@@ -242,6 +349,7 @@ export class Game extends Scene
             if(this.getDist(shell)>200)
             {
                 this.children.remove(shell);
+                this.matter.world.remove(shell.body);
                 //this.addExplosion(shell.x, shell.y);
             }
             else
@@ -254,9 +362,18 @@ export class Game extends Scene
     }
 
     addExplosion(x:number, y:number){
-        this.decorContainer.add(new GameObjects.Sprite(this, x, y, "explosion1")
-            .setScale(.2)
-            .play('anim_explosion1'));
+        this.decorContainer.add(
+            new GameObjects.Sprite(this, x, y, "explosion1")
+                .setScale(.2)
+                .play('anim_explosion1')
+        );
+    }
+    addBoom(x:number, y:number){
+        this.aminsContainer.add(
+            new GameObjects.Sprite(this, x, y, "boom1")
+                .setScale(.2)
+                .play('anim_boom1')
+        );
     }
 
     moveToDone(cPoint:any, toPoint:any){
