@@ -25,6 +25,7 @@ export class Game extends Scene
     decorContainer:GameObjects.Container;
     staticContainer:GameObjects.Container;
     playerContainer:GameObjects.Container;
+    enemyContainer:GameObjects.Container;
     aminsContainer:GameObjects.Container;
 
     constructor ()
@@ -69,6 +70,7 @@ export class Game extends Scene
         this.decorContainer = this.add.container();
         this.staticContainer = this.add.container();
         this.playerContainer = this.add.container();
+        this.enemyContainer = this.add.container();
         this.aminsContainer = this.add.container();
 
         this.onKeyboardControl();
@@ -107,8 +109,11 @@ export class Game extends Scene
                 (event.pairs[0].bodyA.gameObject.name === "shell" && event.pairs[0].bodyB.gameObject.name === "otherTank") ||
                 (event.pairs[0].bodyA.gameObject.name === "otherTank" && event.pairs[0].bodyB.gameObject.name === "shell")
             ){
-                var tankBody = (event.pairs[0].bodyA.gameObject.name == "otherTank"?event.pairs[0].bodyA:event.pairs[0].bodyB);
-
+                let tankBody = (event.pairs[0].bodyA.gameObject.name == "otherTank"?event.pairs[0].bodyA:event.pairs[0].bodyB);
+                let index = this.players.indexOf(tankBody.gameObject);
+                this.players.splice(index, 1);
+                this.playerContainer.remove(tankBody.gameObject, true);
+                this.matter.world.remove(tankBody);
                 this.addExplosion(tankBody.position.x, tankBody.position.y); 
             }
         });
@@ -254,7 +259,7 @@ export class Game extends Scene
 
             cont.preFX?.addShadow();
 
-            this.staticObjects.push(cont);
+            //this.staticObjects.push(cont);
             this.staticContainer.add(cont);
             
         }
@@ -340,7 +345,7 @@ export class Game extends Scene
 
         const shell:any = this.matter.add.sprite(x, y, 'shell1')
             .setScale(.5)
-            .setCircle(10)
+            .setCircle(5)
             .setFlip(false, true);
 
         shell.direction = player.direction;
