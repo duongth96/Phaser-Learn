@@ -42,13 +42,13 @@ export class Game extends Scene
         this.addPlayer();
         
         this.addFishes(2);
-        this.onKeyboardControl()
-       
-        this.zCamera = this.cameras.add(0, 0, (this.game.config.width as number), (this.game.config.height as number))
-            .setZoom(this.zCamZoom)
-            //.setOrigin(0)
-            .startFollow(this.player, true);
-        //this.zCamera.setFollowOffset(0, 0);
+        this.onKeyboardControl();
+
+        this.zCamera = this.cameras.main
+        .setSize((this.game.config.width as number), (this.game.config.height as number))
+        .setZoom(2);
+
+        this.zCamera.startFollow(this.player, true, .5,.5);
 
         (window as any).zCam = this.zCamera;
         (window as any).pler = this.player;
@@ -60,11 +60,10 @@ export class Game extends Scene
         this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
 
         if(this.rotaDone(this.player.rotation, - this.player.direction) && this.isMove){
-            this.player.x += Math.sin(this.player.direction) * this.player.speed;
-            this.player.y += Math.cos(this.player.direction) * this.player.speed;
+            // this.player.x += Math.sin(this.player.direction) * this.player.speed;
+            // this.player.y += Math.cos(this.player.direction) * this.player.speed;
 
-            // this.zCamera.scrollX = this.player.x*this.zCamZoom;
-            // this.zCamera.scrollY = this.player.y*this.zCamZoom;
+            
         }
         
 
