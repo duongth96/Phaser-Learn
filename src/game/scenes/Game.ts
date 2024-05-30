@@ -9,6 +9,7 @@ export class Game extends Scene
     isMove:boolean;
     fishes:Array<any> = [];
     zCamera:Cameras.Scene2D.Camera;
+    zCamZoom:number = 2;
 
     constructor ()
     {
@@ -27,7 +28,6 @@ export class Game extends Scene
         this.load.image('fish1', 'fishauto/fish1.png');
         this.load.spritesheet('tank1', 'Tank_01_Sheets.png', { frameWidth: 256, frameHeight: 256 });
         this.load.spritesheet('tank1_tr2', 'Tank_01_TR2_Sheets.png', { frameWidth: 256, frameHeight: 256 });
-
         
     }
 
@@ -38,16 +38,20 @@ export class Game extends Scene
         this.add.image(0, 0, 'background2')
             .setOrigin(0, 0)
             .setScale(.2)
-            // .setCrop(0, 0, (this.game.config.width as number)/2, (this.game.config.height as number)/2);
 
         this.addPlayer();
         
         this.addFishes(2);
         this.onKeyboardControl()
        
-        // this.zCamera = this.cameras.add(0, 0, (this.game.config.width as number), (this.game.config.height as number))
-        //     .setZoom(1)
-        //     .startFollow(this.player);
+        this.zCamera = this.cameras.add(0, 0, (this.game.config.width as number), (this.game.config.height as number))
+            .setZoom(this.zCamZoom)
+            //.setOrigin(0)
+            .startFollow(this.player, true);
+        //this.zCamera.setFollowOffset(0, 0);
+
+        (window as any).zCam = this.zCamera;
+        (window as any).pler = this.player;
 
         EventBus.emit('current-scene-ready', this);
     }
@@ -55,16 +59,16 @@ export class Game extends Scene
     update(time: number, delta: number): void {
         this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
 
-        // this.player.x += Math.sin(this.player.direction) * this.player.speed;
-        // this.player.y += Math.cos(this.player.direction) * this.player.speed;
-
         if(this.rotaDone(this.player.rotation, - this.player.direction) && this.isMove){
             this.player.x += Math.sin(this.player.direction) * this.player.speed;
             this.player.y += Math.cos(this.player.direction) * this.player.speed;
-        }
 
-        //this.zCamera.setScroll(this.player.x, this.player.y);
-        //this.zCamera.setViewport(this.player.x, this.player.y, 300);
+            // this.zCamera.scrollX = this.player.x*this.zCamZoom;
+            // this.zCamera.scrollY = this.player.y*this.zCamZoom;
+        }
+        
+
+        
     }
 
     onKeyboardControl(){
@@ -103,8 +107,6 @@ export class Game extends Scene
                 this.player.play('run');
                 this.isMove = true;
             }
-            
-            
         });
 
         this.input.keyboard?.on('keyup',()=>{
@@ -128,7 +130,7 @@ export class Game extends Scene
             const x = Math.random()*(this.game.config.width as number);
             const y = Math.random()*(this.game.config.height as number);
             const fish = this.matter.add.sprite(x, y, "fish1")
-                .setScale(.5)
+                .setScale(.2)
                 .setStatic(true);
             fish.preFX?.addShadow();
 
@@ -138,15 +140,15 @@ export class Game extends Scene
     }
 
     addPlayer(){
-        this.player = this.matter.add.sprite(512, 350, 'tank1_tr2')
-            .setScale(.5)
+        this.player = this.matter.add.sprite(100, 100, 'tank1_tr2')
+            .setScale(.2)
             .setFlip(false, true)
             //.setOrigin(.5, 1);
 
         this.player.preFX.addShadow();
 
         this.player.direction = 0;
-        this.player.speed = .5;
+        this.player.speed = 4;
         this.player.angle = 30;
     }
 
