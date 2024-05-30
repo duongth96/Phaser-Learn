@@ -96,11 +96,20 @@ export class Game extends Scene
         });
 
         this.matter.world.on('collisionend', (event:any)=>{
-            if(event.pairs[0].bodyA.gameObject.name === "shell"){
+            if(
+                (event.pairs[0].bodyA.gameObject.name === "shell" && event.pairs[0].bodyB.gameObject.name === "cont") ||
+                (event.pairs[0].bodyA.gameObject.name === "cont" && event.pairs[0].bodyB.gameObject.name === "shell")
+            ){
                 this.addBoom(event.pairs[0].bodyB.position.x, event.pairs[0].bodyB.position.y);
-            }   
-            if(event.pairs[0].bodyB.gameObject.name === "shell"){
-                this.addBoom(event.pairs[0].bodyB.position.x, event.pairs[0].bodyB.position.y);
+            }
+            
+            if(
+                (event.pairs[0].bodyA.gameObject.name === "shell" && event.pairs[0].bodyB.gameObject.name === "otherTank") ||
+                (event.pairs[0].bodyA.gameObject.name === "otherTank" && event.pairs[0].bodyB.gameObject.name === "shell")
+            ){
+                var tankBody = (event.pairs[0].bodyA.gameObject.name == "otherTank"?event.pairs[0].bodyA:event.pairs[0].bodyB);
+
+                this.addExplosion(tankBody.position.x, tankBody.position.y); 
             }
         });
 
@@ -127,9 +136,9 @@ export class Game extends Scene
             this.player.y += Math.cos(this.player.direction) * this.player.speed;
             this.updateMainCameraFollow(this.player);
         }
-        
+
         this.otherAutoPlay(time);
-        this.updateShells(time);
+        this.updateShells(time); 
     }
 
     updateMainCameraFollow(sprite:any){
@@ -240,7 +249,8 @@ export class Game extends Scene
 
             const cont = new Physics.Matter.Sprite(this.matter.world, x, y, sptName)
                 .setScale(.3)
-                .setStatic(true);
+                .setStatic(true)
+                .setName("cont");
 
             cont.preFX?.addShadow();
 
