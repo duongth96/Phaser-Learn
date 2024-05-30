@@ -1,5 +1,6 @@
-import { Scene, Math as pMath, Cameras } from 'phaser';
+import { Scene, Math as pMath, Cameras, GameObjects } from 'phaser';
 import { EventBus } from '../EventBus';
+import { config } from 'process';
 
 export class Game extends Scene
 {
@@ -10,6 +11,9 @@ export class Game extends Scene
     fishes:Array<any> = [];
     zCamera:Cameras.Scene2D.Camera;
     zCamZoom:number = 2;
+
+    gamePartW:number;
+    gamePartH:number;
 
     constructor ()
     {
@@ -34,10 +38,11 @@ export class Game extends Scene
     create ()
     {
         this.initAnims();
+        this.gamePartW = (this.game.config.width as number)/2;
+        this.gamePartH = (this.game.config.height as number)/2;
         
-        this.add.image(0, 0, 'background2')
+        this.add.image(0, 0, 'background')
             .setOrigin(0, 0)
-            .setScale(.2)
 
         this.addPlayer();
         
@@ -46,9 +51,9 @@ export class Game extends Scene
 
         this.zCamera = this.cameras.main
         .setSize((this.game.config.width as number), (this.game.config.height as number))
-        .setZoom(2);
+        .setZoom(this.zCamZoom);
 
-        this.zCamera.startFollow(this.player, true, .5,.5);
+        //this.zCamera.startFollow(this.player, true, .5,.5);
 
         (window as any).zCam = this.zCamera;
         (window as any).pler = this.player;
@@ -60,14 +65,24 @@ export class Game extends Scene
         this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
 
         if(this.rotaDone(this.player.rotation, - this.player.direction) && this.isMove){
-            // this.player.x += Math.sin(this.player.direction) * this.player.speed;
-            // this.player.y += Math.cos(this.player.direction) * this.player.speed;
-
+            this.player.x += Math.sin(this.player.direction) * this.player.speed;
+            this.player.y += Math.cos(this.player.direction) * this.player.speed;
             
+            this.updateMainCameraFollow(this.player);
         }
         
 
         
+    }
+
+    updateMainCameraFollow(sprite:any){
+        var camPaddingW = this.zCamera.worldView.width / this.zCamZoom;
+        var camPaddingH = this.zCamera.worldView.height / this.zCamZoom
+
+        if(sprite.x > camPaddingW && sprite.x < (this.game.config.width as number) - camPaddingW)
+            this.zCamera.scrollX += Math.sin(sprite.direction) * sprite.speed;
+        if(sprite.y > camPaddingH && sprite.y < (this.game.config.height as number) - camPaddingH)
+            this.zCamera.scrollY += Math.cos(sprite.direction) * sprite.speed;
     }
 
     onKeyboardControl(){
@@ -139,7 +154,7 @@ export class Game extends Scene
     }
 
     addPlayer(){
-        this.player = this.matter.add.sprite(100, 100, 'tank1_tr2')
+        this.player = this.matter.add.sprite((this.game.config.width as number)/2,(this.game.config.height as number)/2, 'tank1_tr2')
             .setScale(.2)
             .setFlip(false, true)
             //.setOrigin(.5, 1);
@@ -147,7 +162,7 @@ export class Game extends Scene
         this.player.preFX.addShadow();
 
         this.player.direction = 0;
-        this.player.speed = 4;
+        this.player.speed = 2;
         this.player.angle = 30;
     }
 
