@@ -85,7 +85,7 @@ export class Game extends Scene
 
         this.addPlayer();
         //this.addPlayerMode2();
-        this.addMPlayers(1);
+        this.addMPlayers(5);
         this.addStaticSolid(5);
 
         // world inpact
@@ -104,8 +104,8 @@ export class Game extends Scene
 
         this.matter.world.on('collisionend', (event:any)=>{
             if(
-                (event.pairs[0].bodyA.gameObject.name === "shell" && event.pairs[0].bodyB.gameObject.name === "cont") ||
-                (event.pairs[0].bodyA.gameObject.name === "cont" && event.pairs[0].bodyB.gameObject.name === "shell")
+                (event.pairs[0].bodyA.gameObject?.name === "shell" && event.pairs[0].bodyB.gameObject?.name === "cont") ||
+                (event.pairs[0].bodyA.gameObject?.name === "cont" && event.pairs[0].bodyB.gameObject?.name === "shell")
             ){
                 this.addBoom(event.pairs[0].bodyB.position.x, event.pairs[0].bodyB.position.y);
             }
@@ -316,6 +316,27 @@ export class Game extends Scene
         this.player.name = "myTank"
 
         this.playerContainer.add(this.player);
+        this.players.push(this.player);
+    }
+    updatePlayer(time:number){
+        this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
+
+        // // cách di chuyển 1
+        // if(this.rotaDone(this.player) && !this.moveToDone({x:this.player.x, y:this.player.y},{x:this.pX, y:this.pY})){
+        //     this.player.x += Math.sin(this.player.direction) * this.player.speed;
+        //     this.player.y += Math.cos(this.player.direction) * this.player.speed;
+        //     this.player.gun.x = this.player.x;
+        //     this.player.gun.y = this.player.y;
+            
+        //     this.updateMainCameraFollow(this.player);
+        // }
+
+        // cách di chuyển 2
+        if(this.rotaDone(this.player) && this.isMove){
+            this.player.x += Math.sin(this.player.direction) * this.player.speed;
+            this.player.y += Math.cos(this.player.direction) * this.player.speed;
+            this.updateMainCameraFollow(this.player);
+        }
     }
 
     addMPlayers(num:integer){
@@ -344,30 +365,12 @@ export class Game extends Scene
         this.autosetInterval = setInterval(()=>{
             
             for (let index = 0; index < this.players.length; index++) {
+                if(this.players[index].name == "myTank") continue;
                 this.calcDirection(this.players[index], this.directCodes[Math.floor(Math.random()*this.directCodes.length)]);
             }
         },2000);
     }
-    updatePlayer(time:number){
-        this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
-
-        // // cách di chuyển 1
-        // if(this.rotaDone(this.player) && !this.moveToDone({x:this.player.x, y:this.player.y},{x:this.pX, y:this.pY})){
-        //     this.player.x += Math.sin(this.player.direction) * this.player.speed;
-        //     this.player.y += Math.cos(this.player.direction) * this.player.speed;
-        //     this.player.gun.x = this.player.x;
-        //     this.player.gun.y = this.player.y;
-            
-        //     this.updateMainCameraFollow(this.player);
-        // }
-
-        // cách di chuyển 2
-        if(this.rotaDone(this.player) && this.isMove){
-            this.player.x += Math.sin(this.player.direction) * this.player.speed;
-            this.player.y += Math.cos(this.player.direction) * this.player.speed;
-            this.updateMainCameraFollow(this.player);
-        }
-    }
+    
     updateMPlayers(time:number){
         for (let index = 0; index < this.players.length; index++) {
             const mPlayer = this.players[index];
@@ -378,7 +381,7 @@ export class Game extends Scene
             }
 
             var matchP = this.getPlayerMatchAxist(mPlayer, this.players);
-            if(matchP!=null){
+            if(matchP!=null && matchP.name != "myTank"){
                 this.addShell(matchP);
             }
         }
@@ -480,6 +483,7 @@ export class Game extends Scene
     }
 
     calcDirection(player:any, directKeyCode:any){
+        if(!player) return;
         if(directKeyCode==='w'){
             player.direction = Math.atan2(0, 0 - player.y);
         }
@@ -500,8 +504,6 @@ export class Game extends Scene
             if(player == p1) continue;
             if(Math.abs(player.x - p1.x) < 20 || Math.abs(player.y - p1.y) < 20)
             {
-                console.log('pos',{xx:Math.abs(player.x - p1.x), yy:Math.abs(player.y - p1.y)});
-                
                 return p1;
             }
         }
