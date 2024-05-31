@@ -59,8 +59,6 @@ export class Game extends Scene
         this.load.spritesheet('boom1', 'bomb_01.png', { frameWidth: 256, frameHeight: 256 });
         this.load.spritesheet('explosion1', 'explosion_01.png', { frameWidth: 256, frameHeight: 256 });
 
-        this.load.spritesheet('hull1', 'tank/Hull_Track_01_Sheets.png', { frameWidth: 256, frameHeight: 256 });
-        this.load.image('gun2', 'tank/Gun_02.png');
     }
 
     create ()
@@ -85,44 +83,16 @@ export class Game extends Scene
         
 
         this.addPlayer();
-        //this.addPlayerMode2();
         this.addMPlayers(5);
         this.addStaticSolid(5);
 
         // world inpact
         this.matter.world.on('collisionstart', (event:any)=>{
-            //console.log(event);
-            //let { bodies} = event.source.detector;
-            // if(event.pairs[0].bodyA.gameObject.name === "shell"){
-            //     this.children.remove(event.pairs[0].bodyA.gameObject);
-            //     this.matter.world.remove(event.pairs[0].bodyA);
-            // }
-            // if(event.pairs[0].bodyB.gameObject.name === "shell"){
-            //     this.children.remove(event.pairs[0].bodyB.gameObject);
-            //     this.matter.world.remove(event.pairs[0].bodyB);
-            // }
+           
         });
 
         this.matter.world.on('collisionend', (event:any)=>{
-            // if(
-            //     (event.pairs[0].bodyA.gameObject?.name === "shell" && event.pairs[0].bodyB.gameObject?.name === "cont") ||
-            //     (event.pairs[0].bodyA.gameObject?.name === "cont" && event.pairs[0].bodyB.gameObject?.name === "shell")
-            // ){
-            //     this.addBoom(event.pairs[0].bodyB.position.x, event.pairs[0].bodyB.position.y);
-            // }
             
-            // if(
-            //     (event.pairs[0].bodyA.gameObject.name === "shell" && event.pairs[0].bodyB.gameObject.name === "otherTank") ||
-            //     (event.pairs[0].bodyA.gameObject.name === "otherTank" && event.pairs[0].bodyB.gameObject.name === "shell")
-            // ){
-
-            //     let tankBody = (event.pairs[0].bodyA.gameObject.name == "otherTank"?event.pairs[0].bodyA:event.pairs[0].bodyB);
-            //     let index = this.players.indexOf(tankBody.gameObject);
-            //     this.players.splice(index, 1);
-            //     this.playerContainer.remove(tankBody.gameObject, true);
-            //     this.matter.world.remove(tankBody);
-            //     this.addExplosion(tankBody.position.x, tankBody.position.y); 
-            // }
         });
 
         var sGrid = new GameObjects.Grid(this);
@@ -239,7 +209,7 @@ export class Game extends Scene
         });
         this.anims.create({
             key: 'anim_run2',
-            frames: this.anims.generateFrameNumbers('hull1', { start: 0, end: 1}),
+            frames: this.anims.generateFrameNumbers('tank1', { start: 0, end: 1}),
             frameRate: 15,
             repeat: -1
         });
@@ -279,29 +249,6 @@ export class Game extends Scene
         }
     }
 
-    
-
-    addPlayerMode2(){
-
-        this.player = new Physics.Matter.Sprite(this.matter.world, (this.game.config.width as number)/2,(this.game.config.height as number)/2, 'hull1');
-        this.player.setScale(.15);
-        this.player.setFlip(false, true);
-        this.player.preFX.addShadow();
-        this.player.direction = 0;
-        this.player.speed = 1;
-        this.player.name = "myTank";
-
-        //add gun;
-        this.player.gun = new GameObjects.Sprite(this, this.player.x, this.player.y, "gun2");
-        this.player.gun.setScale(.15);
-        this.player.gun.setFlip(false, true);
-        this.player.gun.setOrigin(.5, .3);
-        this.player.gun.direction = this.player.direction;
-        this.player.turnSpeed = .5;
-
-        this.playerContainer.add(this.player);
-        this.playerContainer.add(this.player.gun);
-    }
 
     addPlayer(){
 
@@ -358,10 +305,11 @@ export class Game extends Scene
             mPlayer.name = "otherTank";
             mPlayer.isMove = true;
             this.calcDirection(mPlayer, this.directCodes[Math.floor(Math.random()*this.directCodes.length)]);
-            
+            mPlayer.play('anim_run2');
 
             this.playerContainer.add(mPlayer);
             this.players.push(mPlayer);
+            
         }
 
         this.autosetInterval = setInterval(()=>{
@@ -391,7 +339,7 @@ export class Game extends Scene
     removePlayer(body:any){
         const killX = body.position.x;
         const killY = body.position.y;
-        
+
         this.players.splice(this.players.indexOf(body.gameObject), 1);
         this.playerContainer.remove(body.gameObject, true);
         this.matter.world.remove(body);
@@ -467,10 +415,10 @@ export class Game extends Scene
         }
     }
     removeShell(shell:any){
+        this.shells.splice(this.shells.indexOf(shell), 1);
         this.children.remove(shell);
         this.matter.world.remove(shell.body);
         this.addBoom(shell.x, shell.y);
-        this.shells.splice(this.shells.indexOf(shell), 1);
     }
 
     addExplosion(x:number, y:number){
