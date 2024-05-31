@@ -55,13 +55,16 @@ export class Game extends Scene
         this.load.spritesheet('tank1_tr2', 'Tank_01_TR2_Sheets.png', { frameWidth: 256, frameHeight: 256 });
         this.load.spritesheet('boom1', 'bomb_01.png', { frameWidth: 256, frameHeight: 256 });
         this.load.spritesheet('explosion1', 'explosion_01.png', { frameWidth: 256, frameHeight: 256 });
+
+        this.load.spritesheet('hull1', 'tank/Hull_Track_01_Sheets.png', { frameWidth: 256, frameHeight: 256 });
+        this.load.image('gun2', 'tank/Gun_02.png');
     }
 
     create ()
     {
         this.initAnims();
-        this.gamePartW = (this.game.config.width as number)/2;
-        this.gamePartH = (this.game.config.height as number)/2;
+        this.pX=this.gamePartW = (this.game.config.width as number)/2;
+        this.pY=this.gamePartH = (this.game.config.height as number)/2;
         
         this.add.image(0, 0, 'background')
             .setOrigin(0, 0);
@@ -78,6 +81,7 @@ export class Game extends Scene
         
 
         this.addPlayer();
+        //this.addPlayerMode2();
         this.addMPlayers(5);
         this.addStaticSolid(5);
 
@@ -108,10 +112,16 @@ export class Game extends Scene
                 (event.pairs[0].bodyA.gameObject.name === "otherTank" && event.pairs[0].bodyB.gameObject.name === "shell")
             ){
                 var tankBody = (event.pairs[0].bodyA.gameObject.name == "otherTank"?event.pairs[0].bodyA:event.pairs[0].bodyB);
-
+                this.children.remove(tankBody.gameObject);
+                this.matter.world.remove(tankBody);
                 this.addExplosion(tankBody.position.x, tankBody.position.y); 
             }
         });
+
+        var sGrid = new GameObjects.Grid(this);
+        sGrid.width = 256;
+        sGrid.height = 256;
+        this.children.add(sGrid);
 
         
         (window as any).zCam = this.zCamera;
@@ -121,23 +131,9 @@ export class Game extends Scene
     }
 
     update(time: number, delta: number): void {
-        this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
-
-        // // cách di chuyển 1
-        // if(this.rotaDone(this.player) && !this.moveToDone({x:this.player.x, y:this.player.y},{x:this.pX, y:this.pY})){
-        //     this.player.x += Math.sin(this.player.direction) * this.player.speed;
-        //     this.player.y += Math.cos(this.player.direction) * this.player.speed;
-        //     this.updateMainCameraFollow(this.player);
-        // }
-
-        // cách di chuyển 2
-        if(this.rotaDone(this.player) && this.isMove){
-            this.player.x += Math.sin(this.player.direction) * this.player.speed;
-            this.player.y += Math.cos(this.player.direction) * this.player.speed;
-            this.updateMainCameraFollow(this.player);
-        }
-
-        this.otherAutoPlay(time);
+        
+        this.updatePlayer(time);
+        this.updateMPlayers(time);
         this.updateShells(time); 
     }
 
@@ -152,15 +148,22 @@ export class Game extends Scene
     }
 
     onKeyboardControl(){
-        this.input.on('pointerdown',()=>{
-            let pt = this.game.input.mousePointer;
-            this.pX = pt?.worldX??0;
-            this.pY = pt?.worldY??0;
+        // this.input.on('pointermove',(event:any)=>{
+        //     let {worldX, worldY}=event;
+        //     this.player.gun.direction = Math.atan2(worldX-this.player.x, worldY - this.player.y);
+        // });
+        // this.input.on('pointerdown',()=>{
+        //     let pt = this.game.input.mousePointer;
+        //     this.pX = pt?.worldX??0;
+        //     this.pY = pt?.worldY??0;
             
-            this.player.direction = Math.atan2(this.pX-this.player.x, this.pY - this.player.y);
+        //     this.player.direction = Math.atan2(this.pX-this.player.x, this.pY - this.player.y);
+        //     if(!this.isMove){
+        //         this.player.play('anim_run2');
+        //         this.isMove = true;
+        //     }
             
-            
-        });
+        // });
 
         this.input.keyboard?.on('keydown-W',()=>{
             this.player.direction = Math.atan2(0, 0 - this.player.y);
@@ -212,6 +215,9 @@ export class Game extends Scene
                     this.isMove = false;
                     this.player.stop();
                 }, 400);
+
+                console.log(this.player.direction);
+                
             }
             
         });
@@ -220,7 +226,13 @@ export class Game extends Scene
     initAnims(){
         this.anims.create({
             key: 'anim_run1',
-            frames: this.anims.generateFrameNumbers('tank1_tr2', { start: 0, end: 1, first: 1 }),
+            frames: this.anims.generateFrameNumbers('tank1_tr2', { start: 0, end: 1}),
+            frameRate: 15,
+            repeat: -1
+        });
+        this.anims.create({
+            key: 'anim_run2',
+            frames: this.anims.generateFrameNumbers('hull1', { start: 0, end: 1}),
             frameRate: 15,
             repeat: -1
         });
@@ -242,7 +254,7 @@ export class Game extends Scene
     addStaticSolid(num:integer){
         for(let i=0; i < num; i++){
 
-            var sptName = this.staticNames[Math.ceil(Math.random()*this.staticNames.length)]
+            var sptName = this.staticNames[Math.floor(Math.random()*this.staticNames.length)]
 
             const x = Math.random()*(this.game.config.width as number);
             const y = Math.random()*(this.game.config.height as number);
@@ -258,6 +270,30 @@ export class Game extends Scene
             this.staticContainer.add(cont);
             
         }
+    }
+
+    
+
+    addPlayerMode2(){
+
+        this.player = new Physics.Matter.Sprite(this.matter.world, (this.game.config.width as number)/2,(this.game.config.height as number)/2, 'hull1');
+        this.player.setScale(.15);
+        this.player.setFlip(false, true);
+        this.player.preFX.addShadow();
+        this.player.direction = 0;
+        this.player.speed = 1;
+        this.player.name = "myTank";
+
+        //add gun;
+        this.player.gun = new GameObjects.Sprite(this, this.player.x, this.player.y, "gun2");
+        this.player.gun.setScale(.15);
+        this.player.gun.setFlip(false, true);
+        this.player.gun.setOrigin(.5, .3);
+        this.player.gun.direction = this.player.direction;
+        this.player.turnSpeed = .5;
+
+        this.playerContainer.add(this.player);
+        this.playerContainer.add(this.player.gun);
     }
 
     addPlayer(){
@@ -290,23 +326,47 @@ export class Game extends Scene
             mPlayer.direction = 0;
             mPlayer.speed = 1;
             mPlayer.name = "otherTank";
+            mPlayer.isMove = true;
 
             this.playerContainer.add(mPlayer);
             this.players.push(mPlayer);
         }
 
         this.autosetInterval = setInterval(()=>{
+            const directCodes = ['w','s','a','d'];
             for (let index = 0; index < this.players.length; index++) {
-                const mPlayer = this.players[index];
-                mPlayer.direction = Math.PI* Math.random();
+                this.calcDirection(this.players[index], directCodes[Math.floor(Math.random()*directCodes.length)]);
             }
         },2000);
     }
-    otherAutoPlay(time:number){
+    updatePlayer(time:number){
+        this.player.rotation = pMath.Angle.RotateTo(this.player.rotation, - this.player.direction, 0.05);
+
+        // // cách di chuyển 1
+        // if(this.rotaDone(this.player) && !this.moveToDone({x:this.player.x, y:this.player.y},{x:this.pX, y:this.pY})){
+        //     this.player.x += Math.sin(this.player.direction) * this.player.speed;
+        //     this.player.y += Math.cos(this.player.direction) * this.player.speed;
+        //     this.player.gun.x = this.player.x;
+        //     this.player.gun.y = this.player.y;
+            
+        //     this.updateMainCameraFollow(this.player);
+        // }
+
+        // cách di chuyển 2
+        if(this.rotaDone(this.player) && this.isMove){
+            this.player.x += Math.sin(this.player.direction) * this.player.speed;
+            this.player.y += Math.cos(this.player.direction) * this.player.speed;
+            this.updateMainCameraFollow(this.player);
+        }
+    }
+    updateMPlayers(time:number){
         for (let index = 0; index < this.players.length; index++) {
             const mPlayer = this.players[index];
-
             mPlayer.rotation = pMath.Angle.RotateTo(mPlayer.rotation, - mPlayer.direction, 0.05);
+            if(this.rotaDone(mPlayer) && mPlayer.isMove){
+                mPlayer.x += Math.sin(mPlayer.direction) * mPlayer.speed;
+                mPlayer.y += Math.cos(mPlayer.direction) * mPlayer.speed;
+            }
         }
     }
 
@@ -397,5 +457,21 @@ export class Game extends Scene
         let xx = Math.abs(obj.x - obj.startX);
         let yy = Math.abs(obj.y - obj.startY);
         return Math.sqrt((xx*xx)+(yy*yy));
+    }
+
+
+    calcDirection(player:any, directKeyCode:any){
+        if(directKeyCode==='w'){
+            player.direction = Math.atan2(0, 0 - player.y);
+        }
+        if(directKeyCode==='s'){
+            player.direction = Math.atan2(0, (this.game.config.height as number) - (player.y as number));
+        }
+        if(directKeyCode==='a'){
+            player.direction = Math.atan2(0 - player.x, 0);
+        }
+        if(directKeyCode==='d'){
+            player.direction = Math.atan2((this.game.config.width as number) - (player.x as number), 0);
+        }
     }
 }
