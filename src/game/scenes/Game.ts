@@ -20,6 +20,7 @@ export class Game extends Scene
     autosetInterval:any
 
     staticNames = ["cont1","cont2","cont3","cont4"];
+    directCodes = ['w','s','a','d'];
 
     // game layers
     decorContainer:GameObjects.Container;
@@ -84,7 +85,7 @@ export class Game extends Scene
 
         this.addPlayer();
         //this.addPlayerMode2();
-        this.addMPlayers(5);
+        this.addMPlayers(1);
         this.addStaticSolid(5);
 
         // world inpact
@@ -318,6 +319,8 @@ export class Game extends Scene
     }
 
     addMPlayers(num:integer){
+        
+
         for (let index = 0; index < num; index++) {
             const x = Math.random()*(this.game.config.width as number);
             const y = Math.random()*(this.game.config.height as number);
@@ -332,15 +335,16 @@ export class Game extends Scene
             mPlayer.speed = 1;
             mPlayer.name = "otherTank";
             mPlayer.isMove = true;
+            this.calcDirection(mPlayer, this.directCodes[Math.floor(Math.random()*this.directCodes.length)]);
 
             this.playerContainer.add(mPlayer);
             this.players.push(mPlayer);
         }
 
         this.autosetInterval = setInterval(()=>{
-            const directCodes = ['w','s','a','d'];
+            
             for (let index = 0; index < this.players.length; index++) {
-                this.calcDirection(this.players[index], directCodes[Math.floor(Math.random()*directCodes.length)]);
+                this.calcDirection(this.players[index], this.directCodes[Math.floor(Math.random()*this.directCodes.length)]);
             }
         },2000);
     }
@@ -372,16 +376,25 @@ export class Game extends Scene
                 mPlayer.x += Math.sin(mPlayer.direction) * mPlayer.speed;
                 mPlayer.y += Math.cos(mPlayer.direction) * mPlayer.speed;
             }
+
+            var matchP = this.getPlayerMatchAxist(mPlayer, this.players);
+            if(matchP!=null){
+                this.addShell(matchP);
+            }
         }
     }
 
+
+
+
     addShell(player:any){
         if(!this.rotaDone(player)) return;
-
+        if(player.lastShell && (Date.now()-player.lastShell)<2000) return;
         var x = 0;
         var y = 0;
         var margin = 40;
         
+        player.lastShell = Date.now();
         if(player.direction == 0)//s
         {
             x = player.x;
@@ -451,6 +464,8 @@ export class Game extends Scene
         );
     }
 
+    //#region calc method
+
     moveToDone(cPoint:any, toPoint:any){
         return Math.abs(cPoint.x - toPoint.x) < 5 && Math.abs(cPoint.y - toPoint.y) < 5;
     }
@@ -463,7 +478,6 @@ export class Game extends Scene
         let yy = Math.abs(obj.y - obj.startY);
         return Math.sqrt((xx*xx)+(yy*yy));
     }
-
 
     calcDirection(player:any, directKeyCode:any){
         if(directKeyCode==='w'){
@@ -479,4 +493,21 @@ export class Game extends Scene
             player.direction = Math.atan2((this.game.config.width as number) - (player.x as number), 0);
         }
     }
+
+    getPlayerMatchAxist(player:any, players:Array<any>){
+        for (let index = 0; index < players.length; index++) {
+            const p1 = players[index];
+            if(player == p1) continue;
+            if(Math.abs(player.x - p1.x) < 20 || Math.abs(player.y - p1.y) < 20)
+            {
+                console.log('pos',{xx:Math.abs(player.x - p1.x), yy:Math.abs(player.y - p1.y)});
+                
+                return p1;
+            }
+        }
+        return null;
+    }
+
+    
+    //#endregion
 }
