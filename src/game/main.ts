@@ -1,5 +1,5 @@
 import { Game as MainGame } from './scenes/Game';
-import { FishAuto } from './scenes/FishAuto';
+import { Game2 } from './scenes/Game2';
 import { AUTO, Game, Types } from 'phaser';
 
 //  Find out more information about the Game Config at:
@@ -18,8 +18,9 @@ const config: Types.Core.GameConfig = {
     parent: 'game-container',
     backgroundColor: '#028af8',
     scene: [
+        
         MainGame,
-        FishAuto
+        Game2
     ]
 };
 

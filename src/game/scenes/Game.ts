@@ -1,7 +1,7 @@
 import { Scene, Math as pMath, Cameras, GameObjects, Physics } from 'phaser';
 import { EventBus } from '../EventBus';
 import internal from 'stream';
-import { log } from 'console';
+import { clear, log } from 'console';
 
 export class Game extends Scene
 {
@@ -22,6 +22,8 @@ export class Game extends Scene
 
     staticNames = ["cont1","cont2","cont3","cont4"];
     directCodes = ['w','s','a','d'];
+
+    playerTimeLeft = Date.now();
 
     // game layers
     decorContainer:GameObjects.Container;
@@ -196,7 +198,7 @@ export class Game extends Scene
                 console.log(this.player.direction);
                 
             }
-            
+            this.playerTimeLeft = Date.now();
         });
     }
 
@@ -285,6 +287,12 @@ export class Game extends Scene
             this.player.y += Math.cos(this.player.direction) * this.player.speed;
             this.updateMainCameraFollow(this.player);
         }
+
+        if(Date.now() - this.playerTimeLeft > 5000 && !this.isMove)
+        {
+            this.isMove = true;
+            this.player.play('anim_run1');
+        }
     }
 
     addMPlayers(num:integer){
@@ -311,11 +319,11 @@ export class Game extends Scene
             this.players.push(mPlayer);
             
         }
-
+        clearInterval(this.autosetInterval);
         this.autosetInterval = setInterval(()=>{
             
             for (let index = 0; index < this.players.length; index++) {
-                if(this.players[index].name == "myTank") continue;
+                if(this.players[index].name == "myTank" && Date.now() - this.playerTimeLeft < 5000) continue;
                 this.calcDirection(this.players[index], this.directCodes[Math.floor(Math.random()*this.directCodes.length)]);
             }
         },2000);
@@ -331,7 +339,7 @@ export class Game extends Scene
             }
 
             var matchP = this.getPlayerMatchAxist(mPlayer, this.players);
-            if(matchP!=null && matchP.name != "myTank"){
+            if(matchP!=null && matchP.name != "myTank" && Date.now() - this.playerTimeLeft > 5000){
                 this.addShell(matchP);
             }
         }

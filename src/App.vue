@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { ref, toRaw } from 'vue';
 import PhaserGame from './game/PhaserGame.vue';
+import { Game } from './game/scenes/Game';
 
 //  References to the PhaserGame component (game and scene are exposed)
 const phaserRef = ref();
@@ -23,11 +24,13 @@ const addSprite = () => {
     }
 
 }
-const loadFishAuto =()=>{
-    //const scene = toRaw(phaserRef.value.scene) as Phaser.Scene; 
-    // scene.start("FishAuto");
-    console.log(phaserRef.value);
-    
+const addMoreTank = ()=>{
+    const scene = toRaw(phaserRef.value.scene) as Game;
+
+    if (scene)
+    {
+        scene.addMPlayers(5);
+    }
 }
 
 </script>
@@ -36,8 +39,10 @@ const loadFishAuto =()=>{
     <PhaserGame ref="phaserRef" />
     <div>
         <div>
-            <button class="button" @click="loadFishAuto">Load Fish Auto</button><br/>
+            
+            <button class="button" @click="addMoreTank">Add More Tank</button> <br/>
             <button class="button" @click="addSprite">Add New Sprite</button>
+            
         </div>
     </div>
 </template>
