@@ -10,6 +10,7 @@ export class Game extends Scene
     zCamZoom:number = 2;
     gamePartW:number;
     gamePartH:number;
+    stopGame = false;
 
     players:Array<any> =[];
     player:any;
@@ -110,20 +111,24 @@ export class Game extends Scene
     }
 
     update(time: number, delta: number): void {
+        if(!this.stopGame){
+            this.updatePlayer(time);
+            this.updateMPlayers(time);
+            this.updateShells(time); 
+        }
         
-        this.updatePlayer(time);
-        this.updateMPlayers(time);
-        this.updateShells(time); 
+        
     }
 
     updateMainCameraFollow(sprite:any){
         var camPaddingW = this.zCamera.worldView.width / this.zCamZoom;
-        var camPaddingH = this.zCamera.worldView.height / this.zCamZoom
+        var camPaddingH = this.zCamera.worldView.height / this.zCamZoom;
+        
 
         if(sprite.x > camPaddingW && sprite.x < (this.game.config.width as number) - camPaddingW)
-            this.zCamera.scrollX += Math.sin(sprite.direction) * sprite.speed;
+            this.zCamera.scrollX = sprite.x-this.gamePartW;
         if(sprite.y > camPaddingH && sprite.y < (this.game.config.height as number) - camPaddingH)
-            this.zCamera.scrollY += Math.cos(sprite.direction) * sprite.speed;
+            this.zCamera.scrollY = sprite.y-this.gamePartH;
     }
 
     onKeyboardControl(){
@@ -260,10 +265,12 @@ export class Game extends Scene
         this.player.setFlip(false, true);
 
         this.player.preFX.addShadow();
+        this.player.preFX.addGlow();
 
         this.player.direction = 0;
         this.player.speed = 1;
-        this.player.name = "myTank"
+        this.player.name = "myTank";
+        this.player.body.mass = 2;
 
         this.playerContainer.add(this.player);
         this.players.push(this.player);
@@ -339,7 +346,7 @@ export class Game extends Scene
             }
 
             var matchP = this.getPlayerMatchAxist(mPlayer, this.players);
-            if(matchP!=null && matchP.name != "myTank" && Date.now() - this.playerTimeLeft > 5000){
+            if(matchP != null && (matchP.name != "myTank" && Date.now() - this.playerTimeLeft > 5000)){
                 this.addShell(matchP);
             }
         }
@@ -488,5 +495,14 @@ export class Game extends Scene
     }
 
     
+    
+    
     //#endregion
+    onStartOrStop(){
+        return this.stopGame=!this.stopGame;
+    }
+    changeScene ()
+    {
+        this.scene.start('Game2');
+    }
 }

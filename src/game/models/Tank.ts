@@ -1,52 +1,51 @@
 import { GameObjects, Physics, Scene } from "phaser";
 export class Tank extends Physics.Matter.Sprite{
+    scene: Scene;
+    direction:number =0;
+    speed:number =2;
+    rotationSpeed:number = 0.05;
+    bulletType:string;
+    _isMe: boolean=false;
+    isMoving:boolean=true;
 
-    _layer: GameObjects.Container;
-    _scene: Scene;
-    _direction:number;
-    _speed:number;
-    _ammoType:string;
-
-    constructor(name:string, texture:string, container:GameObjects.Container, scene:Scene){
-        super(scene.matter.world, (container.width as number)/2, (container.height as number)/2, texture);
-        this._layer = container;
-        this._scene = scene;
-        container.add(this);
+    constructor(scene:Scene, x:number, y:number , texture:string, isMe: boolean = false){
+        super(scene.matter.world, x, y, texture);
+        this.scene = scene;
+        this._isMe = isMe;
     }
     
-    move(derection:number){
-        this._direction = derection;
+    setDirection(derection:number){
+        this.direction = derection;
+    }
+    setSpeed(speed:number){
+        this.speed = speed;
     }
 
-    shot(){
-
+    setBullet(bulletType:string){
+        this.bulletType = bulletType;
+    }
+    
+    remove(layer: GameObjects.Container){
+        layer.remove(this);
+        this.scene.matter.world.remove(this.body as any);
     }
 
-    upgradeSpeed(speed:number){
-        this._speed = speed;
+    shot(): Bullet{
+        return new Bullet(this.scene, this, this.bulletType);
     }
 
-    upgradeAmmo(ammoType:string){
-        this._ammoType = ammoType;
-    }
-
-    remove(){
-        this._layer.remove(this);
-        this._scene.matter.world.remove(this.body as any);
-    }   
-
+    isMe=()=>this._isMe;
 }
 
 
 export class Bullet extends Physics.Matter.Sprite{
     tank:Physics.Matter.Sprite;
-    _direction:number;
-    _speed:number;
+    direction:number;
+    speed:number;
 
-    constructor(tank:Tank, texture:string, scene:Scene){
+    constructor(scene:Scene, tank:Tank, texture:string){
         super(scene.matter.world ,tank.x, tank.y, texture);
-        this._direction = tank._direction;
-        this._speed = 4;
-        tank._layer.add(this);
+        this.direction = tank.direction;
+        this.speed = 4;
     }
 }

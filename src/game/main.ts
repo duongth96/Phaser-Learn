@@ -18,9 +18,8 @@ const config: Types.Core.GameConfig = {
     parent: 'game-container',
     backgroundColor: '#028af8',
     scene: [
-        
         MainGame,
-        Game2
+        Game2,
     ]
 };
 
