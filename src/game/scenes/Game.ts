@@ -265,7 +265,6 @@ export class Game extends Scene
         this.player.setFlip(false, true);
 
         this.player.preFX.addShadow();
-        this.player.preFX.addGlow();
 
         this.player.direction = 0;
         this.player.speed = 1;
@@ -346,7 +345,7 @@ export class Game extends Scene
             }
 
             var matchP = this.getPlayerMatchAxist(mPlayer, this.players);
-            if(matchP != null && (matchP.name != "myTank" && Date.now() - this.playerTimeLeft > 5000)){
+            if(matchP != null && (matchP.name != "myTank" || Date.now() - this.playerTimeLeft > 5000)){
                 this.addShell(matchP);
             }
         }
@@ -466,6 +465,12 @@ export class Game extends Scene
         return Math.sqrt((xx*xx)+(yy*yy));
     }
 
+    getDist2Obj(obj:any, obj2:any){
+        let xx = Math.abs(obj.x - obj2.x);
+        let yy = Math.abs(obj.y - obj2.y);
+        return Math.sqrt((xx*xx)+(yy*yy));
+    }
+
     calcDirection(player:any, directKeyCode:any){
         if(!player) return;
         if(directKeyCode==='w'){
@@ -486,7 +491,7 @@ export class Game extends Scene
         for (let index = 0; index < players.length; index++) {
             const p1 = players[index];
             if(player == p1) continue;
-            if(Math.abs(player.x - p1.x) < 20 || Math.abs(player.y - p1.y) < 20)
+            if((Math.abs(player.x - p1.x) < 20 || Math.abs(player.y - p1.y) < 20) && this.getDist2Obj(player, p1) < 200)
             {
                 return p1;
             }
